@@ -1,0 +1,47 @@
+function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, notes_Hz, Fs)
+    duration_sp = length(audioData);
+    winSize_sp = round(winSize_ms / 1000 * Fs);
+    stride_sp = round(winSize_sp*(1-overlap_portion));
+
+    numWin = 1 + ceil((duration_sp - winSize_sp)/ stride_sp);
+
+    specMat = zeros(length(notes_Hz), numWin);  % Preallocate for efficiency
+    
+    freqs = Fs * (0:(winSize_sp/2)) / winSize_sp;
+    notes_Hz_idxs = [];
+
+    for i = 1:length(notes_Hz)
+        notes_Hz_idxs = [notes_Hz_idxs, argmin(abs(freqs - notes_Hz(i)))];
+    end
+
+    for i = 1:numWin
+        st_idx = 1 + (i - 1) * stride_sp;
+        end_idx = min(winSize_sp + (i-1) * stride_sp, length(audioData));
+        winData = audioData(st_idx:end_idx);
+
+        % FFT and frequency extraction
+        Y = fft(winData);
+        P2 = abs(Y / length(winData));
+        P1 = P2(1:floor(length(winData)/2)+1);
+        P1(2:end-1) = 2*P1(2:end-1);
+
+        specMat(:,i) = P1(notes_Hz_idxs);
+    end
+
+    
+end
+
+
+
+% % Display information about the file
+% disp(['Audio data read from file: ', fullFileName]);
+% disp(['Sample rate: ', num2str(Fs), ' Hz']);
+% disp(['Number of samples: ', num2str(size(audioData, 1))]);
+% disp(['Number of channels after conversion: ', num2str(size(audioData, 2))]);
+% 
+% % Optionally, plot the waveform of the audio file
+% figure;
+% plot(audioData);
+% title('Waveform of the selected MP3 file (Mono)');
+% xlabel('Sample number');
+% ylabel('Amplitude');

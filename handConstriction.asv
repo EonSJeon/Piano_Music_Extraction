@@ -1,0 +1,35 @@
+function correctedNotes = handConstriction(notesAtTheMoment, N, handSize)
+    % Number of active notes
+    numActiveNotes = sum(notesAtTheMoment > 0);
+    
+    if numActiveNotes > N
+        % Find the indices of the top N highest values
+        [~, indices] = maxk(notesAtTheMoment, N);
+        
+        % Create a new array with zeros
+        correctedNotes = zeros(size(notesAtTheMoment));
+        
+        % Set the top N highest notes in the new array
+        correctedNotes(indices) = notesAtTheMoment(indices);
+    else
+        correctedNotes = notesAtTheMoment;
+    end
+
+    % Identify active indices
+    activeIndices = find(correctedNotes > 0);
+    if ~isempty(activeIndices)
+        % Check spread and hand constraints
+        if max(activeIndices) - min(activeIndices) + 1 <= handSize * 2
+            return
+        end
+        
+        adjustActiveIndices = activeIndices - min(activeIndices)+1;
+        count= zeros(length(adjustActiveIndices), max(adjustActiveIndices)+handSize);
+        for i = 1:length(adjustActiveIndices)
+            count(i,adjustActiveIndices(i):adjustActiveIndices(i)+handSize-1) = 1;
+        end
+        resCount = sum(count,1)
+        maxLoc = argmax(resCount);
+        firstHand=correctedNotes() find(count(:,maxLoc)>0);
+    end
+end
