@@ -1,6 +1,6 @@
 % Define global variables and parameters
 global NOTE2NUM NUM2NOTE winSize_ms notes_Hz
-notes_Hz = 440 * 2 .^ ((-30:1:24) ./ 12);
+notes_Hz = 440 * 2 .^ ((-30:1:20) ./ 12);
 winSize_ms =200;
 overlap = 0.995;
 

@@ -52,7 +52,7 @@ function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, no
     
     % Hand Constriction
     for i=1:numWin
-        specMat(:,i) = handConstriction(specMat(:,i), 6, 12);
+        specMat(:,i) = handConstriction(specMat(:,i), 7, 12);
     end
 
     % Eliminate short spikes

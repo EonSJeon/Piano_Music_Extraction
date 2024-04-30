@@ -17,23 +17,23 @@ function correctedNotes = handConstriction(notesAtTheMoment, N, handSize)
         correctedNotes = notesAtTheMoment;
     end
 
-    % % Identify active indices
-    % activeIndices = find(correctedNotes > 0);
-    % if ~isempty(activeIndices)
-    %     Check spread and hand constraints
-    %     if max(activeIndices) - min(activeIndices) + 1 > handSize * 2
-    %         If the span of notes is too wide, further constrain
-    %         while max(activeIndices) - min(activeIndices) + 1 > handSize * 2 && length(activeIndices) > 1
-    %             Reduce notes from the ends based on which end is higher
-    %             if correctedNotes(activeIndices(1)) < correctedNotes(activeIndices(end))
-    %                 correctedNotes(activeIndices(1)) = 0;
-    %             else
-    %                 correctedNotes(activeIndices(end)) = 0;
-    %             end
-    %             activeIndices = find(correctedNotes > 0);  % Update active indices
-    %         end
-    %     end
-    % end
+    % Identify active indices
+    activeIndices = find(correctedNotes > 0);
+    if ~isempty(activeIndices)
+        % Check spread and hand constraints
+        if max(activeIndices) - min(activeIndices) + 1 > handSize * 2
+            % If the span of notes is too wide, further constrain
+            while max(activeIndices) - min(activeIndices) + 1 > handSize * 2 && length(activeIndices) > 1
+                % Reduce notes from the ends based on which end is higher
+                if correctedNotes(activeIndices(1)) < correctedNotes(activeIndices(end))
+                    correctedNotes(activeIndices(1)) = 0;
+                else
+                    correctedNotes(activeIndices(end)) = 0;
+                end
+                activeIndices = find(correctedNotes > 0);  % Update active indices
+            end
+        end
+    end
 end
 
 
