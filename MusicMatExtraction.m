@@ -42,11 +42,11 @@ function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, no
     specMat = 10 * log10(specMat);
     specMat = specMat - max(specMat(:)) + 10;
     
-    % % Simple Moving Average as a low-pass filter
-    % smoothSpan = 3; % Example smoothing span
-    % for i = 1:length(notes_Hz)
-    %     specMat(i, :) = smooth(specMat(i, :), smoothSpan);
-    % end
+    % Simple Moving Average as a low-pass filter
+    smoothSpan = 3; % Example smoothing span
+    for i = 1:length(notes_Hz)
+        specMat(i, :) = smooth(specMat(i, :), smoothSpan);
+    end
 
     specMat(specMat < 0) = 0;
     
@@ -57,7 +57,7 @@ function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, no
 
     % Eliminate short spikes
     for i=1:length(notes_Hz)
-        specMat(i,:)= eliminateSpikes(specMat(i,:), 150);
+        specMat(i,:)= eliminateSpikes(specMat(i,:), 200);
     end
 
     
