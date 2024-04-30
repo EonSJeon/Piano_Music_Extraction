@@ -51,7 +51,7 @@ if length(note_start_indices) == length(note_end_indices)
     num_music_segments = length(data_note_start_indices);
     peak_frequencies = [];
     num_samples = [];
-    amplitudes = [];
+    %amplitudes = [];
     decay_factors = [];
     
     for i=1:num_music_segments
@@ -81,8 +81,8 @@ if length(note_start_indices) == length(note_end_indices)
         peak_frequencies(i) = piano_key_freq(peak_freq);
         num_samples(i) = N;
 
-        amplitudes = [amplitude amplitudes];
-        decay_factors = [decay_factor decay_factors];
+        %amplitudes = [amplitude amplitudes];
+        %decay_factors = [decay_factor decay_factors];
 
     end
 
