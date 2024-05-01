@@ -1,15 +1,16 @@
 function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, notes_Hz, Fs)
     duration_sp = length(audioData);
     winSize_sp = round(winSize_ms / 1000 * Fs);
+    dft_N = winSize_sp*10;
     stride_sp = round(winSize_sp * (1 - overlap_portion));
     numWin = 1 + ceil((duration_sp - winSize_sp) / stride_sp);
-    specMat = zeros(length(notes_Hz), numWin);  % Preallocate for efficiency
+    specData = zeros(length(notes_Hz), numWin);  % Preallocate for efficiency
     numNotes = length(notes_Hz);
 
     
     
     % Calculate frequency indices
-    freqs = Fs * (0:(winSize_sp/2)) / winSize_sp;
+    freqs = Fs * (0:(dft_N/2)) / dft_N;
     notes_Hz_idxs = zeros(1, length(notes_Hz));
     for i = 1:length(notes_Hz)
         [~, idx] = min(abs(freqs - notes_Hz(i)));
@@ -32,61 +33,115 @@ function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, no
         winData = winData .* hannWindow;  % Apply Hann window
 
         % FFT and frequency extraction
-        Y = fft(winData, winSize_sp);
-        P2 = abs(Y / winSize_sp);
-        P1 = P2(1:floor(winSize_sp/2) + 1);
+        Y = fft(winData, dft_N);
+        P2 = abs(Y / dft_N);
+        P1 = P2(1:floor(dft_N/2) + 1);
         P1(2:end-1) = 2 * P1(2:end-1);
 
-        specMat(:, i) = P1(notes_Hz_idxs);
+        specData(:, i) = P1(notes_Hz_idxs);
+    end
+    
+    tempMaxRange_ms = 2000;
+    tempMaxRange_sp = tempMaxRange_ms / 1000 * Fs; 
+    tempMaxRange_numWin = round(tempMaxRange_sp / stride_sp); 
+    
+    pcaOverlap = 0.99;
+    pcaStride = tempMaxRange_numWin * (1 - pcaOverlap);
+    
+    L = 1 + ceil((numWin - tempMaxRange_numWin) / pcaStride);  
+    
+    for i = 1:L
+        % Calculate starting and ending indices for the window
+        srtIdx = 1 + pcaStride * (i - 1);
+        endIdx = min(numWin, srtIdx + tempMaxRange_numWin - 1);  
+    
+        tempSpecData = specData(:, srtIdx:endIdx);  
+    
+        meanTempSpecMat = mean(tempSpecData, 1);
+        centeredTempSpecMat = tempSpecData - meanTempSpecMat;
+        
+        % Perform PCA
+        [coeff, score, ~, ~, explained] = pca(centeredTempSpecMat);
+        
+        % Filter based on explained variance (get indices of significant components)
+        significantComponents = explained >= 5;
+        
+        % Filter coeff and score matrices to retain only significant components
+        score = score(:, significantComponents);
+        coeff = coeff(:, significantComponents);
+        explained(~significantComponents)=Inf;
+    
+        % Approximate original data using the principal component scores of significant components only
+        approxData = (score * coeff' + meanTempSpecMat);
+    
+        % Conditional assignment based on loop iteration
+        if i ~= L
+            specData(:, srtIdx:srtIdx + pcaStride - 1) = approxData(:, 1:pcaStride);
+        else
+            specData(:, srtIdx:endIdx) = approxData(:, 1:size(approxData, 2));
+        end
     end
 
-    % Process the spectrogram further (dB conversion, normalization, smoothing)
-    specMat(specMat <= 0) = eps;
-    specMat = 10 * log10(specMat);
-    specMat = specMat - max(specMat,[],"all");
+
     
-    tempMaxRange_ms = 2500;
+    % Visualize the approximated data as a heatmap
+    figure(1);
+    heatmap(specData);
+    grid off;
+    
+    specData(specData <= 0) = eps;
+    specData = 10 * log(specData);
+    specData = specData - max(specData,[],"all");
+    
+
+    
+    tempMaxRange_ms = 2000;
     tempMaxRange_sp = tempMaxRange_ms / 1000 * Fs;
     tempMaxRange_numWin = round(tempMaxRange_sp / stride_sp);
-    
+
     % Local Threshold
-    specMat = localThreshold(tempMaxRange_numWin, specMat, 18);
-    
-    % Hand Constriction
-    for i=1:numWin
-        specMat(:,i) = handConstriction(specMat(:,i), 8, 11);
-    end
+    specData = localThreshold(tempMaxRange_numWin, specData, 35);
 
     % Eliminate short spikes
     for i=1:numNotes
-        specMat(i,:)= eliminateSpikes(specMat(i,:), 55);
+        specData(i,:)= eliminateSpikes(specData(i,:), 33);
+    end
+    
+   
+    % Hand Constriction
+    for i=1:numWin
+        specData(:,i) = handConstriction(specData(:,i), 8, 9);
     end
 
+    figure(2);
+    heatmap(specData);
+    grid off;
+
     % Simple Moving Average as a low-pass filter
-    smoothSpan =5; % Example smoothing span
+    smoothSpan =3; % Example smoothing span
     for i = 1:numNotes
-        specMat(i, :) = smooth(specMat(i, :), smoothSpan);
+        specData(i, :) = smooth(specData(i, :), smoothSpan);
     end
-    specMat = specMat*10;
-    
-    invalidIdx=find(specMat<=0);
-    specMat(invalidIdx)=-1000;
-    
+    specData = specData*10;
+
+    invalidIdx=find(specData<=0);
+    specData(invalidIdx)=-1000;
+
     tempMaxRange_ms = 5000;
     tempMaxRange_sp = tempMaxRange_ms / 1000 * Fs;
     tempMaxRange_numWin = round(tempMaxRange_sp / stride_sp);
-    specMat = localThreshold(tempMaxRange_numWin, specMat, 100);
+    specData = localThreshold(tempMaxRange_numWin, specData, 300);
 
     % Eliminate short spikes
     for i=1:numNotes
-        specMat(i,:)= eliminateSpikes(specMat(i,:), 40);
+        specData(i,:)= eliminateSpikes(specData(i,:), 33);
     end
     
-    % figure(2);
-    % bar3(specMat);
-    % daspect([numNotes numWin  20]);
+    figure(3);
+    heatmap(specData);
+    grid off;
 
-    noteMat = specMat;
+    noteMat = specData;
 end
 
 
