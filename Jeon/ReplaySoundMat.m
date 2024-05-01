@@ -21,13 +21,29 @@ function soundMat = ReplaySoundMat(seq, winSize_ms, notes_Hz, Fs)
         
         % Create a mask based on the sequence activation
         mask = zeros(1, numSamples);  % Initialize mask
+        noteStartIdx = 1;
+        playing = false;  % Correctly initialize the logical variable
+        
         for j = 1:L
-            if seq(j, i) > 0  % Correct indexing for sequence access
-                windowStart = (j - 1) * winSize_sp + 1;
-                windowEnd = min(j * winSize_sp, numSamples);
-                mask(windowStart:windowEnd) = 1;
+            if seq(j, i) > 0 && ~playing  % Detect rising edge, start playing
+                playing = true;
+                noteStartIdx = j;
+            elseif (seq(j, i) <= 0 || j == L) && playing  % Detect falling edge or end, stop playing
+                playing = false;
+                noteStart = (noteStartIdx - 1) * winSize_sp + 1;
+                noteEnd = min(j * winSize_sp, numSamples);
+                noteLength = noteEnd - noteStart + 1;
+                
+                if noteLength > 0  % Check if there is a valid length to apply Hann window
+                    t= 1:noteLength;
+                    target_fraction = 0.75;
+                    alpha = log(target_fraction) / noteLength;
+                    tone= 0.5*exp(alpha*t);
+                    mask(noteStart:noteEnd) = tone';
+                end
             end
         end
+
         
         % Apply the mask to the note sound
         singleNoteSound = singleNoteSound .* mask;  % Element-wise multiplication to apply mask
