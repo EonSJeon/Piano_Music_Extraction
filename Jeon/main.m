@@ -1,7 +1,7 @@
 % Define global variables and parameters
 global winSize_ms notes_Hz
 notes_Hz = 440 * 2 .^ ((-11:1:10) ./ 12);
-winSize_ms =200;
+winSize_ms =1000;
 overlap = 0.99;
 
 root_dir = './dataset';
