@@ -1,5 +1,86 @@
-% Initialize note mappings
-init_NOTE2NUM_and_NUM2NOTE();
+% Constants
+hw = 2;
+duration_th = 300;
+duration = 8;
+wrongDelTh= 380;
+h = [1000, wrongDelTh, 500];        % Heights
+a = -h./hw^2;               % Precompute 'a' for each parabola (negative acceleration)
+t_apex = [2, 4, 5];         % Apex times for each parabola
+
+% Time vector
+t  = 0:0.2:duration;
+
+% Preallocate y for efficiency
+y = zeros(5*length(h), length(t));
+
+% Calculate each parabola
+for j = 1:5*length(h)
+    i =ceil(j/5)
+    
+    y(j, :) = a(i) * (t - t_apex(i)).^2 + h(i) + duration_th;
+end
+
+
+
+% Zero out negative values (e.g., after the parabola falls below the duration threshold)
+y(y < 0) = 0;
+
+figure(8);
+bar3(y);
+
+% Plot using bar3
+figure(1);
+heatmap(y);
+grid off;
+
+% Just duration_th
+y=y-duration_th;
+y(y<0)=0;
+figure(2);
+heatmap(y);
+grid off;
+
+y1=y;
+y1(y1>0)=100;
+figure(3);
+heatmap(y1);
+grid off;
+
+% Correct form
+y(2,:)=0;
+figure(4);
+heatmap(y);
+grid off;
+
+y(y>0)=100;
+figure(5);
+heatmap(y);
+grid off;
+
+
+% Calculate each parabola
+for i = 1:length(h)
+    y(i, :) = a(i) * (t - t_apex(i)).^2 + h(i) + duration_th;
+end
+
+y = y - (duration_th + wrongDelTh);
+% Delete wrong note but temporal error
+y(y<0)=0;
+figure(6);
+heatmap(y);
+grid off;
+
+y(y>0)=100;
+figure(7);
+heatmap(y);
+grid off;
+
+
+
+
+
+% % Initialize note mappings
+% init_NOTE2NUM_and_NUM2NOTE();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Debug Tool

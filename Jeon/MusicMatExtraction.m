@@ -1,14 +1,13 @@
 function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, notes_Hz, Fs)
     duration_sp = length(audioData);
     winSize_sp = round(winSize_ms / 1000 * Fs);
-    dft_N = winSize_sp*1;
+    dft_N = winSize_sp*10;
     stride_sp = round(winSize_sp * (1 - overlap_portion));
     numWin = 1 + ceil((duration_sp - winSize_sp) / stride_sp);
     specData = zeros(length(notes_Hz), numWin);  % Preallocate for efficiency
     numNotes = length(notes_Hz);
     
-    
-    
+
     % Calculate frequency indices
     freqs = Fs * (0:(dft_N/2)) / dft_N;
     notes_Hz_idxs = zeros(1, length(notes_Hz));
@@ -50,7 +49,7 @@ function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, no
     specData = 10 * log(specData);
     specData = specData - max(specData,[],"all");
 
-    specData = localThreshold(-1, specData, 10);
+    specData = localThreshold(-1, specData, 12);
 
     % Visualize the approximated data as a heatmap
     figure(2);
@@ -79,7 +78,7 @@ function noteMat = MusicMatExtraction(audioData, winSize_ms, overlap_portion, no
     % figure(2);
     % heatmap(specData);
     % grid off;
-
+    % 
     % % Simple Moving Average as a low-pass filter
     % smoothSpan =3; % Example smoothing span
     % for i = 1:numNotes

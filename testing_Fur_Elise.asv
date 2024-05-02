@@ -3,8 +3,7 @@ audio_file_path = 'Fur_Elise_Easy.mp3';
 [audio_data, sample_rate] = audioread(audio_file_path);
 [num_samples, num_channels] = size(audio_data);
 
-numNotes = 48+39+1;
-specData = zeros(num_samples, numNotes);
+specData = zeros(num_samples, num_channels);
 
 % Convert audio to mono if it is stereo
 if num_channels > 1
@@ -94,10 +93,7 @@ if length(note_start_indices) == length(note_end_indices)
 
             if freq < sample_rate/2 && freq_amp > min_peak_height
                 amps_matrix(i,j) = freq_amp;
-                [tempFreqIdx,freqs_matrix(i,j)] = piano_key_freq(freq);
-                specData(start_idx: end_idx, tempFreqIdx) = freq_amp; 
-                % freq_amp
-                % tempFreqIdx
+                freqs_matrix(i,j) = piano_key_freq(freq);
             else
                 amps_matrix(i,j) = 0;
                 freqs_matrix(i,j) = 0;
@@ -105,6 +101,7 @@ if length(note_start_indices) == length(note_end_indices)
         end
         
         
+        specData(:, start_idx, end_idx) = 
 
         %peak_freq = freqs(freq_peak_indices(1));
 
@@ -118,18 +115,6 @@ if length(note_start_indices) == length(note_end_indices)
 else
     disp('Adjust peak detection parameters')
 end
-
-
-% figure(1);
-tempSpecData= 1000*specData(:,30:60);
-
-% Downsample the data
-downsampleFactor = 1000;
-reducedSpecData = tempSpecData(1:downsampleFactor:end, :);
-
-figure();
-heatmap(reducedSpecData');
-grid off;
 
 
 row_sums = sum(amps_matrix,2);

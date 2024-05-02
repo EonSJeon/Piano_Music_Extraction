@@ -1,4 +1,4 @@
-function [key_freq] = piano_key_freq(freq)
+function [closest_idx, key_freq] = piano_key_freq(freq)
 %Converts frequencies detected by the FFT to a discrete piano key freq
 
 % Define the reference frequency for A4 (440 Hz)
