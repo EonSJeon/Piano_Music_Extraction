@@ -43,6 +43,8 @@ note_end_indices = note_end_indices(2:end);
 %note_end_indices_2 = note_start_indices + 10;
 %note_end_indices = note_end_indices-5;
 
+num_simultaneous_notes = 3;
+
 if length(note_start_indices) == length(note_end_indices)
     step_length = window_length - overlap;
     data_note_start_indices = (note_start_indices - 1)*step_length;
@@ -51,8 +53,10 @@ if length(note_start_indices) == length(note_end_indices)
     num_music_segments = length(data_note_start_indices);
     peak_frequencies = [];
     num_samples = [];
-    %amplitudes = [];
     decay_factors = [];
+
+    amps_matrix = zeros(num_music_segments, num_simultaneous_notes);
+    freqs_matrix = zeros(num_music_segments, num_simultaneous_notes);
     
     for i=1:num_music_segments
         start_idx = data_note_start_indices(i);
@@ -72,16 +76,33 @@ if length(note_start_indices) == length(note_end_indices)
          
         %peak_frequency = freqs(peak_index);
         
-        min_peak_height = 0.85;
+        min_peak_height = 0.3;
 
-        [~, freq_peak_indices] = findpeaks(fft_mag_normalized, "MinPeakHeight",min_peak_height);
+        [freq_peak_amps, freq_peak_indices] = findpeaks(fft_mag_normalized, "MinPeakHeight",min_peak_height);
+        
+        [sorted_peak_amps, reordered_peak_indices] = sort(freq_peak_amps, 'descend');
+        
+        sorted_peak_indices = freq_peak_indices(reordered_peak_indices);
 
-        peak_freq = freqs(freq_peak_indices(1));
+        for j=1:length(sorted_peak_indices)
+            freq_idx = sorted_peak_indices(j);
+            freq_amp = sorted_peak_amps(j);
+            freq = freqs(freq_idx);
 
-        peak_frequencies(i) = piano_key_freq(peak_freq);
+            if freq < sample_rate/2 && freq_amp > min_peak_height
+                amps_matrix(i,j) = freq_amp;
+                freqs_matrix(i,j) = piano_key_freq(freq);
+            else
+                amps_matrix(i,j) = 0;
+                freqs_matrix(i,j) = 0;
+            end
+        end
+
+        %peak_freq = freqs(freq_peak_indices(1));
+
+        %peak_frequencies(i) = piano_key_freq(peak_freq);
         num_samples(i) = N;
 
-        %amplitudes = [amplitude amplitudes];
         %decay_factors = [decay_factor decay_factors];
 
     end
@@ -90,6 +111,10 @@ else
     disp('Adjust peak detection parameters')
 end
 
+
+row_sums = sum(amps_matrix,2);
+normalized_amps_matrix = amps_matrix ./ row_sums;
+
 %%
 
 % Initialize an empty array to store the audio data
@@ -97,16 +122,20 @@ reconstr_audio = [];
 
 % Iterate through each frequency in the list
 
-for i=1:length(peak_frequencies)
-    t = 0:(1/sample_rate):(num_samples(i)/sample_rate);
-    freq = peak_frequencies(i);
+for k=1:num_music_segments
+    t = 0:(1/sample_rate):(num_samples(k)*1.5/sample_rate);
+    sine_wave = zeros(1, length(t));
 
-    duration = num_samples(i)/sample_rate;
+    for m=1:5
+        sine_wave = sine_wave + 0.4*amps_matrix(k,m)*sin(2*pi*freqs_matrix(k,m)*t);
+    end 
 
-    target_fraction = 0.75;
-    alpha = log(target_fraction) / duration;
+    %duration = num_samples(i)/sample_rate;
 
-    sine_wave = 0.5*exp(alpha*t).*sin(2 * pi * freq * t);
+    target_fraction = 0.8;
+    alpha = log(target_fraction) / (num_samples(k)*1.5/sample_rate);
+
+    sine_wave = 0.5*exp(alpha*t).*sine_wave;
     reconstr_audio = [reconstr_audio, sine_wave];
 end
 
