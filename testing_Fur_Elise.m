@@ -30,6 +30,7 @@ for i=1:num_windows
     energy(i) = sum(audio_data(start_idx:end_idx).^2);
 end
 
+
 % Moving average of energy to smooth it out
 moving_avg_energy = movmean(energy,3);
 minPeakDistance = 7; % 7 for Fur Elise
@@ -129,7 +130,7 @@ reducedSpecData = tempSpecData(1:downsampleFactor:end, :);
 
 figure();
 heatmap(reducedSpecData');
-grid off;
+grid on;
 
 
 row_sums = sum(amps_matrix,2);
